@@ -18,10 +18,14 @@ router.get('/', async (req, res) => {
       }],
     });
       if (!productData){
-        return res.status(400).json({message: 'No products added.'});
-      }} catch (err) {
+        res.status(400).json({message: 'No products added.'});
+        return;
+      }
+      res.status(200).json(productData);
+      } catch (err) {
         res.status(500).json({message: `Internal server error: ${err}`});
-    }});
+      }
+    });
 
 // get one product
 router.get('/:id', async (req, res) => {
@@ -38,13 +42,14 @@ router.get('/:id', async (req, res) => {
     });
     if (!productData){
       return res.status(400).json({message: 'No product associated with this id.'});
-    }} catch (err) {
+    }
+    res.status(200).json(productData);
+  } catch (err) {
       res.status(500).json({message: `Interval server error: ${err}`});
     };
 
 // create new product
 router.post('/', (req, res) => {
-  Product,create
   /* req.body should look like this...
     {
       product_name: "Basketball",
