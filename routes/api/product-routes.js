@@ -4,7 +4,7 @@ const { Product, Category, Tag, ProductTag } = require('../../models');
 
 // The `/api/products` endpoint
 
-// get all products
+// get route for retrieving all products
 router.get('/', async (req, res) => {
   try {
     const productData = await Product.findAll({
@@ -27,7 +27,7 @@ router.get('/', async (req, res) => {
       }
     });
 
-// get one product
+// get route for retrieving product by its id 
 router.get('/:id', async (req, res) => {
   try {
     const productData = await Product.findByPk(req.params.id, {
@@ -123,6 +123,7 @@ router.put('/:id', (req, res) => {
 })
 });
 
+//delete route for deleting product by its id
 router.delete('/:id', async (req, res) => {
   try {
     const productData = await Product.destroy({
