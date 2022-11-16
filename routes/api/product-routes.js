@@ -1,70 +1,108 @@
-const router = require('express').Router();
-const { restart } = require('nodemon');
-const { Product, Category, Tag, ProductTag } = require('../../models');
+const router = require("express").Router();
+const { restart } = require("nodemon");
+const { Product, Category, Tag, ProductTag } = require("../../models");
 
 // The `/api/products` endpoint
 
 // get route for retrieving all products
-router.get('/', async (req, res) => {
+router.get("/", async (req, res) => {
   try {
     const productData = await Product.findAll({
       include: [
-        {model: Category}, 
-        {model: Tag,
-        through: {
-          model: ProductTag,
-          attributes: ['id', 'tag_id','product_id']
+        { model: Category },
+        {
+          model: Tag,
+          through: {
+            model: ProductTag,
+            attributes: ["id", "tag_id", "product_id"],
+          },
         },
-      }],
+      ],
     });
-      if (!productData){
-        res.status(400).json({message: 'No products added.'});
-        return;
-      }
-      res.status(200).json(productData);
-      } catch (err) {
-        res.status(500).json({message: `Internal server error: ${err}`});
-      }
-    });
-
-// get route for retrieving product by its id 
-router.get('/:id', async (req, res) => {
-  try {
-    const productData = await Product.findByPk(req.params.id, {
-      include: [
-        {model: Category},
-        {model: Tag,
-        through: {
-          model: ProductTag,
-          attributes: ['id','tag_id','product_id']
-        },
-      }],
-    });
-    if (!productData){
-      return res.status(400).json({message: 'No product associated with this id.'});
+    if (!productData) {
+      res.status(400).json({ message: "No products added." });
+      return;
     }
     res.status(200).json(productData);
   } catch (err) {
-      res.status(500).json({message: `Interval server error: ${err}`});
-    };
+    res.status(500).json({ message: `Internal server error: ${err}` });
+  }
+});
+
+// get route for retrieving product by its id
+router.get("/:id", async (req, res) => {
+  try {
+    const productData = await Product.findByPk(req.params.id, {
+      include: [
+        { model: Category },
+        {
+          model: Tag,
+          through: {
+            model: ProductTag,
+            attributes: ["id", "tag_id", "product_id"],
+          },
+        },
+      ],
+    });
+    if (!productData) {
+      return res
+        .status(400)
+        .json({ message: "No product associated with this id." });
+    }
+    res.status(200).json(productData);
+  } catch (err) {
+    res.status(500).json({ message: `Interval server error: ${err}` });
+  }
+});
 
 // create new product
-router.post('/', (req, res) => {
-  Product.create({
-    product_name: req.body.product_name,
-    price: req.body.price,
-    stock: req.body.stock,
-  })
-    .then((newProduct) => {
-      res.json(newProduct);
+// router.post('/', (req, res) => {
+//   Product.create({
+//     product_name: req.body.product_name,
+//     price: req.body.price,
+//     stock: req.body.stock,
+//   })
+//     .then((newProduct) => {
+//       res.json(newProduct);
+//     })
+//     .catch((err) => {
+//       res.status(500).json(err);
+//     })
+// });
+
+router.post("/", (req, res) => {
+  /* req.body should look like this...
+    {
+      product_name: "Basketball",
+      price: 200.00,
+      stock: 3,
+      tagIds: [1, 2, 3, 4]
+    }
+  */
+  Product.create(req.body)
+    .then((product) => {
+      // if there's product tags, we need to create pairings to bulk create in the ProductTag model
+      if (req.body.tagIds.length) {
+        const productTagIdArr = req.body.tagIds.map((tag_id) => {
+          return {
+            product_id: product.id,
+            tag_id,
+          };
+        });
+        return ProductTag.bulkCreate(productTagIdArr);
+      }
+      // if no product tags, just respond
+      res.status(200).json(product);
     })
+    .then((productTagIds) => res.status(200).json(productTagIds))
     .catch((err) => {
-      res.status(500).json(err);
-    })
+      console.log(err);
+      res.status(400).json(err);
+    });
 });
 
 // update product
-router.put('/:id', (req, res) => {
+router.put("/:id", (req, res) => {
   // update product data
   Product.update(req.body, {
     where: {
@@ -103,22 +141,23 @@ router.put('/:id', (req, res) => {
       // console.log(err);
       res.status(400).json(err);
     });
-})
 });
 
 //delete route for deleting product by its id
-router.delete('/:id', async (req, res) => {
+router.delete("/:id", async (req, res) => {
   try {
     const productData = await Product.destroy({
-      where: {id: req.params.id}
+      where: { id: req.params.id },
     });
     if (!productData) {
-      return res.status(400).json({message: 'No product associated with this id.'});
+      return res
+        .status(400)
+        .json({ message: "No product associated with this id." });
     }
     res.status(200).json(productData);
   } catch (err) {
-    res.status(500).json({message: `Internal server error: ${err}`});
-  };
+    res.status(500).json({ message: `Internal server error: ${err}` });
+  }
 });
 
 module.exports = router;
